@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Mobile Slider</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="slide.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="content-area">
+            <div class="preview-box">
+                <div class="preview-slider" id="cardSlider">
+                    <div class="preview-slide">
+                        <div class="preview-content">
+                            <h2>Welcome!</h2>
+                            <p>This is the first page with important information about our service. Swipe or tap next to continue.</p>
+                        </div>
+                    </div>
+                    <div class="preview-slide">
+                        <div class="qr-scanner-box">
+                            <video id="video" autoplay playsinline></video>
+                            <canvas id="scannerCanvas"></canvas>
+                            <div class="scanner-overlay" id="scannerOverlay" style="display: none;">
+                                <div class="scan-line"></div>
+                            </div>
+                            <div class="scanner-corners">
+                                <div class="corner top-left"></div>
+                                <div class="corner top-right"></div>
+                                <div class="corner bottom-left"></div>
+                                <div class="corner bottom-right"></div>
+                            </div>
+                        </div>
+                        <div class="scanner-label">QR Scanner</div>
+                        <p class="scanner-hint">Position the QR code within the frame to scan</p>
+                    </div>
+                    <div class="preview-slide">
+                        <div class="preview-content">
+                            <h2>All Set!</h2>
+                            <p>You're ready to start. Click done to complete the setup process and begin your journey.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dots-indicator">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+        <div class="button-area">
+            <button class="btn btn-secondary" onclick="prevSlide()" id="backBtn" style="display:none">Back</button>
+            <button class="btn btn-primary" onclick="nextSlide()" id="nextBtn">Next</button>
+            <button class="btn btn-primary" onclick="finishSetup()" id="doneBtn" style="display:none">Done</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 3;
+        const cardSlider = document.getElementById('cardSlider');
+         const video = document.getElementById('video');
+         const scannerOverlay = document.getElementById('scannerOverlay');
+        const scannerCanvas = document.getElementById('scannerCanvas');
+        const ctx = scannerCanvas && scannerCanvas.getContext ? scannerCanvas.getContext('2d') : null;
+         let stream = null;
+        let detectorActive = false;
+        let barcodeDetector = null;
+        let detectionRafId = null;
+
+        function resizeCanvasToVideo(){
+            if (!scannerCanvas || !video) return;
+            const w = video.videoWidth || 240;
+            const h = video.videoHeight || 240;
+            if (scannerCanvas.width !== w || scannerCanvas.height !== h){
+                scannerCanvas.width = w;
+                scannerCanvas.height = h;
+            }
+        }
+
+         function updateSlider() {
+            cardSlider.style.transform = `translateX(-${currentSlide * 100}%)`;
+             updateDots();
+             
+             if (currentSlide === 1) {
+                 startCamera();
+             } else {
+                 stopCamera();
+             }
+            // Toggle buttons
+            document.getElementById('backBtn').style.display = currentSlide > 0 ? 'inline-block' : 'none';
+            document.getElementById('nextBtn').style.display = currentSlide < totalSlides - 1 ? 'inline-block' : 'none';
+            document.getElementById('doneBtn').style.display = currentSlide === totalSlides - 1 ? 'inline-block' : 'none';
+         }
+
+         function updateDots() {
+             const dots = document.querySelectorAll('.dot');
+             dots.forEach((dot, index) => {
+                 if (index === currentSlide) {
+                     dot.classList.add('active');
+                 } else {
+                     dot.classList.remove('active');
+                 }
+             });
+         }
+
+         function nextSlide() {
+             if (currentSlide < totalSlides - 1) {
+                 currentSlide++;
+                 updateSlider();
+             }
+         }
+
+         function prevSlide() {
+             if (currentSlide > 0) {
+                 currentSlide--;
+                 updateSlider();
+             }
+         }
+
+        function finishSetup() {
+            try { stopCamera(); } catch(_) {}
+            window.location.href = 'index.html';
+        }
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = stream;
+                video.style.display = 'block';
+                scannerOverlay.style.display = 'flex';
+                // ensure canvas matches stream size once metadata is ready
+                video.onloadedmetadata = () => { resizeCanvasToVideo(); };
+                startDetection();
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                video.style.display = 'none';
+                scannerOverlay.style.display = 'flex';
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                stream = null;
+            }
+            video.style.display = 'none';
+            scannerOverlay.style.display = 'none';
+            stopDetection();
+        }
+
+        function stopDetection(){
+            detectorActive = false;
+            if (detectionRafId){ cancelAnimationFrame(detectionRafId); detectionRafId = null; }
+            if (ctx && scannerCanvas){ ctx.clearRect(0,0,scannerCanvas.width,scannerCanvas.height); }
+        }
+
+        function handleScanSuccess(text){
+            if (!text) text = '';
+            try { if (navigator.vibrate) navigator.vibrate(80); } catch(_){ }
+            detectorActive = false;
+            stopCamera();
+            alert('QR detected: ' + text);
+        }
+
+        function startDetection(){
+            detectorActive = true;
+            if ('BarcodeDetector' in window){
+                try {
+                    barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                } catch(_) {
+                    try { barcodeDetector = new window.BarcodeDetector(); } catch(e) { barcodeDetector = null; }
+                }
+                const detectLoop = async () => {
+                    if (!detectorActive) return;
+                    try {
+                        if (video.readyState >= 2){
+                            resizeCanvasToVideo();
+                            const barcodes = await barcodeDetector.detect(video);
+                            if (ctx) ctx.clearRect(0,0,scannerCanvas.width,scannerCanvas.height);
+                            if (barcodes && barcodes.length){
+                                const qr = barcodes[0];
+                                if (ctx && qr.boundingBox){
+                                    ctx.strokeStyle = '#33c0a7';
+                                    ctx.lineWidth = 3;
+                                    const { x, y, width, height } = qr.boundingBox;
+                                    ctx.strokeRect(x, y, width, height);
+                                }
+                                handleScanSuccess(qr.rawValue || qr.data || '');
+                                return; // stop loop after success
+                            }
+                        }
+                    } catch(err){
+                        console.warn('BarcodeDetector error', err);
+                    }
+                    detectionRafId = requestAnimationFrame(detectLoop);
+                };
+                detectionRafId = requestAnimationFrame(detectLoop);
+            } else if (window.jsQR && ctx){
+                const detectLoop = () => {
+                    if (!detectorActive) return;
+                    if (video.readyState >= 2){
+                        resizeCanvasToVideo();
+                        ctx.drawImage(video, 0, 0, scannerCanvas.width, scannerCanvas.height);
+                        const imageData = ctx.getImageData(0, 0, scannerCanvas.width, scannerCanvas.height);
+                        const code = window.jsQR(imageData.data, scannerCanvas.width, scannerCanvas.height, { inversionAttempts: 'dontInvert' });
+                        ctx.clearRect(0,0,scannerCanvas.width,scannerCanvas.height);
+                        if (code){
+                            ctx.strokeStyle = '#33c0a7';
+                            ctx.lineWidth = 3;
+                            const loc = code.location;
+                            ctx.beginPath();
+                            ctx.moveTo(loc.topLeftCorner.x, loc.topLeftCorner.y);
+                            ctx.lineTo(loc.topRightCorner.x, loc.topRightCorner.y);
+                            ctx.lineTo(loc.bottomRightCorner.x, loc.bottomRightCorner.y);
+                            ctx.lineTo(loc.bottomLeftCorner.x, loc.bottomLeftCorner.y);
+                            ctx.closePath();
+                            ctx.stroke();
+                            handleScanSuccess(code.data);
+                            return; // stop after success
+                        }
+                    }
+                    detectionRafId = requestAnimationFrame(detectLoop);
+                };
+                detectionRafId = requestAnimationFrame(detectLoop);
+            } else {
+                console.warn('Real-time QR not available: enable Chrome/Edge or include jsQR.');
+            }
+        }
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        cardSlider.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        cardSlider.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) {
+                nextSlide();
+            }
+            if (touchEndX > touchStartX + 50) {
+                prevSlide();
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+        });
+    </script>
+    <!-- Fallback QR decoder for browsers without BarcodeDetector -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+ </body>
+</html>
