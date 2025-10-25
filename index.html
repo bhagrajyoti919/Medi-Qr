@@ -370,6 +370,43 @@
                     <button class="ai-action-btn" id="aiActionBtn" onclick="openAiAssistant()">AI</button>
                     <button class="photo-action-btn" id="photoActionBtn" onclick="showPhotoOptions()"><span>+</span></button>
                 </div>
+
+                <div class="photo-options-modal" id="photoOptionsModal">
+                    <div class="photo-options-content">
+                        <button class="photo-option-btn" onclick="openCamera()">
+                            <span class="option-icon">📷</span>
+                            <span class="option-text">Take Photo</span>
+                        </button>
+                        <button class="photo-option-btn" onclick="openGallery()">
+                            <span class="option-icon">🖼️</span>
+                            <span class="option-text">Choose from Gallery</span>
+                        </button>
+                        <button class="photo-option-btn cancel" onclick="closePhotoOptions()">
+                            <span class="option-text">Cancel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Camera input - opens device camera -->
+                <input type="file" id="cameraInput" accept="image/*" capture="user" style="display: none;">
+                <!-- Gallery input - opens photo gallery -->
+                <input type="file" id="galleryInput" accept="image/*" multiple style="display: none;">
+
+                <!-- Image Preview Modal -->
+                <div class="image-preview-modal" id="imagePreviewModal" aria-hidden="true">
+                    <div class="image-preview-content">
+                        <button class="image-preview-close" onclick="closeImagePreview()" aria-label="Close preview">&times;</button>
+                        <div class="image-preview-body">
+                            <button class="preview-nav prev" onclick="prevPreviewImage()" aria-label="Previous">◀</button>
+                            <img id="previewUploadedImage" class="image-preview-img" alt="Uploaded image preview" />
+                            <button class="preview-nav next" onclick="nextPreviewImage()" aria-label="Next">▶</button>
+                            <div class="preview-actions">
+                                <button class="add-more-btn" onclick="addMoreFromPreview()" aria-label="Add more">+ add more</button>
+                                <button class="done-btn" onclick="donePreview()" aria-label="Done">Done</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
             setTimeout(() => {
                 try {

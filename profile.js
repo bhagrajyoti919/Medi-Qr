@@ -243,22 +243,16 @@ function stopCameraStream(videoEl) {
 
 function saveCapturedPhoto(dataUrl) {
   try {
-    const images = JSON.parse(localStorage.getItem('sectionImages') || '[]');
-    images.push(dataUrl);
-    localStorage.setItem('sectionImages', JSON.stringify(images));
-
-    if (typeof renderReportsGallery === 'function') {
-      renderReportsGallery();
-    }
-    if (typeof showNotification === 'function') {
-      showNotification('Image captured and added to reports!');
-    }
+    // Stage the captured image in preview; do not persist yet
     if (typeof openImagePreview === 'function') {
       openImagePreview([dataUrl]);
     }
+    if (typeof showNotification === 'function') {
+      showNotification('Image staged. Tap Done to add to reports.');
+    }
   } catch (_) {
     if (typeof showNotification === 'function') {
-      showNotification('Failed to save captured image');
+      showNotification('Failed to stage captured image');
     }
   }
 }
@@ -350,10 +344,9 @@ function closeImagePreview() {
   if (!modal) return;
   modal.classList.remove('active');
   modal.setAttribute('aria-hidden', 'true');
-  // Refresh gallery so the selected images reflect immediately
-  if (typeof renderReportsGallery === 'function') {
-    renderReportsGallery();
-  }
+  // Clear staged preview without persisting
+  previewImages = [];
+  previewIndex = 0;
 }
 
 // Replace single-file handler with multi-file batch processing
@@ -366,18 +359,12 @@ function handlePhotoUpload(event) {
     reader.onload = e => resolve(e.target.result);
     reader.readAsDataURL(file);
   }))).then(batch => {
-    const images = JSON.parse(localStorage.getItem('sectionImages') || '[]');
-    batch.forEach(src => images.push(src));
-    localStorage.setItem('sectionImages', JSON.stringify(images));
-
-    if (typeof renderReportsGallery === 'function') {
-      renderReportsGallery();
-    }
-    if (typeof showNotification === 'function') {
-      showNotification(batch.length > 1 ? 'Images added to reports!' : 'Image added to reports!');
-    }
+    // Stage selected images in preview; do not persist yet
     if (typeof openImagePreview === 'function') {
       openImagePreview(batch);
+    }
+    if (typeof showNotification === 'function') {
+      showNotification(batch.length > 1 ? 'Images staged. Tap Done to save.' : 'Image staged. Tap Done to save.');
     }
   }).catch(() => {
     if (typeof showNotification === 'function') {
@@ -632,3 +619,35 @@ async function sendAiMessage() {
 })();
 // Hook: after photo upload, show preview modal
 // In handlePhotoUpload -> reader.onload, after saving, open preview
+
+function donePreview() {
+  try {
+    if (!Array.isArray(previewImages) || previewImages.length === 0) {
+      closeImagePreview();
+      return;
+    }
+    const existing = JSON.parse(localStorage.getItem('sectionImages') || '[]');
+    const next = existing.concat(previewImages);
+    localStorage.setItem('sectionImages', JSON.stringify(next));
+
+    const addedCount = previewImages.length;
+    // Clear staged preview
+    previewImages = [];
+    previewIndex = 0;
+    closeImagePreview();
+
+    if (typeof renderReportsGallery === 'function') {
+      renderReportsGallery();
+    }
+    if (typeof showNotification === 'function') {
+      showNotification(addedCount > 1 ? 'Images added to reports!' : 'Image added to reports!');
+    }
+  } catch (_) {
+    if (typeof showNotification === 'function') {
+      showNotification('Failed to add image(s) to reports');
+    }
+  }
+}
+window.closeImagePreview = closeImagePreview;
+window.deleteReportImage = deleteReportImage;
+window.donePreview = donePreview;
