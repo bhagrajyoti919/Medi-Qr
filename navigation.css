@@ -381,11 +381,26 @@
     transform: translateX(0);
 }
 
+/* User header layout */
+.user-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.user-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+}
 /* Make profile pic clickable */
 .user-header .profile-pic {
     cursor: pointer;
     transition: transform 0.2s;
+    order: 1;
 }
+.user-header h3 { order: 2; }
 
 .user-header .profile-pic:active {
     transform: scale(0.95);
