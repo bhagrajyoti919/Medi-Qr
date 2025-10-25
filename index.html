@@ -8,6 +8,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="gemini-api-key" content="AIzaSyDgsAmMOtosi2N2SlfvfOOGxFw8aCL8te4">
     <title>Mobile App UI</title>
+    <script>
+      (function(){
+        try {
+          var fromSlide = sessionStorage.getItem('fromSlide') === 'true';
+          if (!fromSlide) {
+            window.location.replace('slide.html');
+            return;
+          }
+          // Allow index once per session after coming from slide
+          sessionStorage.removeItem('fromSlide');
+        } catch(e) {
+          window.location.replace('slide.html');
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="navigation.css">
 </head>
@@ -30,7 +45,7 @@
             <div class="user-header">
                 <h3 id="navPatientName">patient name</h3>
                 <div class="profile-pic" onclick="openEditProfile()">
-                    <img id="navProfilePic" src="https://i.pravatar.cc/150?img=12" alt="User Photo">
+                    <img id="navProfilePic" alt="User Photo">
                 </div>
             </div>
             
@@ -61,7 +76,7 @@
                 <!-- Profile Photo Section -->
                 <div class="edit-photo-section">
                     <div class="edit-profile-pic">
-                        <img id="editProfilePic" src="https://i.pravatar.cc/150?img=12" alt="Profile Photo">
+                        <img id="editProfilePic" alt="Profile Photo">
                         <label for="photoUpload" class="photo-upload-btn">
                             <span>📷</span>
                         </label>
@@ -298,8 +313,11 @@
     <script src="navigation.js"></script>
     <script src="profile.js"></script>
     <script>
-        // Load card on page load
+        // Load card on page load only after setup is done
         window.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (localStorage.getItem('setupDone') !== 'true') return;
+            } catch(e) { return; }
             loadUserProfile();
             showCard();
         });

@@ -17,45 +17,57 @@ html, body {
 
 .app-container {
     width: 100vw;
-    height: 100vh;
+    min-height: 100svh;
     background-color: white;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
 .content-area {
-    flex: 1;
+    flex: 0 0 auto;
     background-color: #fff;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 10px;
-    margin-bottom: 0;
+    margin: 0 auto;
     border-radius: 20px;
+    width: 280px;
+    height: 520px;
 }
 
 .bottom-tabs {
     display: flex;
     gap: 10px;
-    padding: 15px;
+    padding: 12px 16px;
     background-color: #fff;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom) + 0px);
+    border-top: 1px solid #e5e5e5;
+    z-index: 50;
 }
 
 .tab {
     flex: 1;
-    padding: 15px 0;
+    padding: 14px 0;
     text-align: center;
     border: 2px solid #000;
     border-radius: 10px;
     background-color: white;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s;
     font-family: Arial, sans-serif;
     -webkit-appearance: none;
+}
+
+@media (max-width: 380px) {
+  .tab { font-size: 15px; padding: 12px 0; }
 }
 
 .tab:active {
@@ -73,10 +85,11 @@ html, body {
 }
 
 .card {
-    width: 85vw;
-    max-width: 400px;
-    height: 50vw;
-    max-height: 250px;
+    /* Restore original max size and keep responsive within container */
+    width: min(85vw, 400px);
+    max-width: 100%;
+    aspect-ratio: 16 / 10;
+    height: auto;
     color: #fff;
     cursor: pointer;
     perspective: 1000px;
@@ -207,6 +220,37 @@ html, body {
 .profile-container p {
     font-size: 18px;
     color: #666;
+}
+
+/* Align index page size with slide preview size */
+@media (max-width: 480px) {
+  .content-area {
+    flex: 0 0 auto;
+    width: min(96vw, 420px);
+    height: min(76vh, 640px);
+    margin: 0 auto;
+    border-radius: 20px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .content-area {
+    flex: 0 0 auto;
+    width: min(80vw, 360px);
+    height: min(65vh, 580px);
+    margin: 0 auto;
+    border-radius: 20px;
+  }
+}
+
+@media (min-width: 769px) {
+  .content-area {
+    flex: 0 0 auto;
+    width: 280px;
+    height: 520px;
+    margin: 0 auto;
+    border-radius: 20px;
+  }
 }
 
 /* Default content styling */
@@ -458,19 +502,22 @@ html, body {
 /* Photo Options Modal */
 .photo-options-modal {
     position: fixed;
-    bottom: -100%;
     left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 500;
-    transition: bottom 0.3s ease;
     height: 100vh;
-    display: flex;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
     align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1100;
 }
 
 .photo-options-modal.active {
-    bottom: 0;
+    display: flex;
+    pointer-events: auto;
 }
 
 .photo-options-content {
@@ -750,19 +797,22 @@ html, body {
 /* Photo Options Modal */
 .photo-options-modal {
     position: fixed;
-    bottom: -100%;
     left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 500;
-    transition: bottom 0.3s ease;
     height: 100vh;
-    display: flex;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
     align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1100;
 }
 
 .photo-options-modal.active {
-    bottom: 0;
+    display: flex;
+    pointer-events: auto;
 }
 
 .photo-options-content {
