@@ -300,3 +300,30 @@ document.addEventListener('click', function(e) {
   window.renderPatientHistoryView = renderPatientHistoryView;
   window.renderPatientHistoryEdit = renderPatientHistoryEdit;
 })();
+
+(function(){
+  function ensureAiModal(){
+    let modal = document.getElementById('aiAssistantModal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'aiAssistantModal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <span class="modal-close" onclick="closeModal('aiAssistantModal')">&times;</span>
+        <h2>AI Assistant</h2>
+        <div class="modal-body">
+          <p>This assistant will help analyze your reports.</p>
+          <p>Feature coming soon. For now, this is a preview.</p>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function openAiAssistant(){
+    const modal = ensureAiModal();
+    modal.classList.add('active');
+  }
+  window.openAiAssistant = openAiAssistant;
+})();
